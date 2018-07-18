@@ -37,14 +37,15 @@ To create the registry and login for Docker, the az-cli is required. Use this pa
 Creating a container registry is a recent feature that can be done from the az command line:
 
     az login
-    az acr create --resource-group <my_RG> --name <my_acr_name> \
-        --sku Basic --admin-enabled true
-
+    ACR_NAME=<registry-name>
+    RES_GROUP=$ACR_NAME # Resource Group name
+    az group create --resource-group $RES_GROUP --location eastus
+    az acr create --resource-group $RES_GROUP --name $ACR_NAME --sku Standard --location eastus
+    
 Since all Docker commands have to be run as sudo, also this sudo environment needs to login and the az commands need te be run like that:
 
     sudo az login
     sudo az acr login --name <my_acr_name>
-    sudo az acr show --name <my_acr_name> --query loginServer --output table
 
 ## Build a Docker HPC container from a definition file
 
@@ -64,18 +65,13 @@ This is the Dockerfile definition file used:
     ENV LD_LIBRARY_PATH /opt/intel/compilers_and_libraries_2016.3.223/linux/mpi/intel64/lib/
     ENTRYPOINT ["exec", "\"$@\""]
 
-All Docker commands require root user to use, so building the container goes like this:
+Build and Push a Docker Image to ACR
 
-    sudo docker build -t rdma .
+```bash
+az acr build . -t $ACR_NAME.azurecr.io/rdma:{{.Build.ID}} -t $ACR_NAME.azurecr.io/rdma:latest
+```
 
-## Uploading Docker image to Azure Container Registry
 
-Now the Docker image is build, it can be tagged with the registry name and pushed into the Azure Container Registry. The registry name can be obtained with:
-
-    sudo az acr show --name <my_acr_name> --query loginServer --output table
-
-    sudo docker tag rdma <my_acr_name>.azurecr.io/rdma:latest
-    sudo docker push <my_acr_name>.azurecr.io/rdma:latest
 
 ## Building the Singularity image
 
